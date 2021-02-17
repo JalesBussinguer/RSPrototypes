@@ -207,37 +207,47 @@ def plotBand(data, banda, vmin, vmax):
     return imgplot
 
 # Função que plota o histograma da imagem
-def plotHistogram(data, banda, bins):
+def plotHistogram(data, banda):
 
     print('Plotting the histogram...')
     
-    w = data.getSceneRasterWidth()
-    h = data.getSceneRasterHeight()
     band = data.getBand(banda)
+    
+    w = band.getRasterWidth()
+    h = band.getRasterHeight()
     
     band_data = np.zeros(w * h, np.float32)
     band.readPixels(0, 0, w, h, band_data)
-    band_data.shape = h, w
+    band_data.shape = h * w
 
-    histplot = plt.hist(np.asarray(band_data, dtype='float'), bins=bins, range=[-33, -1], normed=True)
+    histplot = plt.hist(np.asarray(band_data, dtype='float'), bins=2048, range=[-33, -1])
 
-    return histplot.show()
+    return histplot
 
 # ------------------------------------------------------------------------------------------------------
 
 # Binarização da imagem
 
-def binarization(data, banda, bins):
+def find_threshold(data, banda):
     
-    w = data.getSceneRasterWidth()
-    h = data.getSceneRasterHeight()
     band = data.getBand(banda)
 
-    band_data = np.zeros(w * h, np.float32)
-
-    hist = plt.hist(np.asarray(band_data, dtype='float'), bins=bins, range=[-33, -1])
+    w = band.getRasterWidth()
+    h = band.getRasterHeight()
     
-    return threshold_isodata(np.asarray(band_data, dtype='float'), return_all=True)
+    band_data = np.zeros(w * h, np.float32)
+    band.readPixels(0, 0, w, h, band_data)
+    band_data.shape = h * w
+
+    counts, bins = plt.hist(np.asarray(band_data, dtype='float'), bins=2600, range=[-31, -5])
+    
+    x = dict(zip(counts, bins))
+
+    dict_reducted = {k:v for (k,v) in x.items() if -15 > v > -25}
+
+    key_threshold = min(dict_reducted.keys())
+
+    return x[key_threshold]
 
 # ------------------------------------------------------------------------------------------------------
 
