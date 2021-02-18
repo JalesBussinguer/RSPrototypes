@@ -229,22 +229,16 @@ def plotHistogram(data, banda):
 
 # Binarização da imagem
 
-def find_threshold(data, banda):
-    
-    band = data.getBand(banda)
-
-    w = band.getRasterWidth()
-    h = band.getRasterHeight()
-    
-    band_data = np.zeros(w * h, np.float32)
-    band.readPixels(0, 0, w, h, band_data)
-    band_data.shape = h * w
-
-    counts, bins = plt.hist(np.asarray(band_data, dtype='float'), bins=2600, range=[-31, -5])
+def find_threshold(counts, bins):
     
     x = dict(zip(counts, bins))
 
-    dict_reducted = {k:v for (k,v) in x.items() if -15 > v > -25}
+    dict_peak_water = {k:v for (k,v) in x.items() if -40 < v < -17}
+    peak_water = max(dict_peak_water.keys())
+    
+    peak_land = max(x.keys())
+
+    dict_reducted = {k:v for (k,v) in x.items() if x[peak_land] > v > x[peak_water]}
 
     key_threshold = min(dict_reducted.keys())
 
@@ -258,38 +252,41 @@ if __name__ == '__main__':
     GPF.getDefaultInstance().getOperatorSpiRegistry().loadOperatorSpis()
 
     # Product initialization
-    s1_path = 'C:/Users/jales/Desktop/S1A.zip'
+    s1_path = 'C:/Users/jales/Desktop/S1/S1A_processado/Sigma0_VH_db.hdr'
 
     # Reading the data
     product = ProductIO.readProduct(s1_path)
 
     # ------------------------------------------------------------------------------------------------------
 
-    ProductInformation(product)
+    #ProductInformation(product)
 
-    S1_Orb = ApplyOrbitFile(product)
+    #S1_Orb = ApplyOrbitFile(product)
 
-    S1_Orb_Subset = Subset(S1_Orb, 0, 9928, 25580, 16846)
+    #S1_Orb_Subset = Subset(S1_Orb, 0, 9928, 25580, 16846)
 
-    ProductInformation(S1_Orb_Subset)
+    #ProductInformation(S1_Orb_Subset)
 
-    S1_Orb_Subset_Cal = Calibration(S1_Orb_Subset, 'Intensity_VH', 'VH')
+    #S1_Orb_Subset_Cal = Calibration(S1_Orb_Subset, 'Intensity_VH', 'VH')
 
-    S1_Orb_Subset_Cal_Ter = Terrain_Correction(S1_Orb_Subset_Cal, 'Sigma0_VH')
+    #S1_Orb_Subset_Cal_Ter = Terrain_Correction(S1_Orb_Subset_Cal, 'Sigma0_VH')
 
-    S1_Orb_Subset_Cal_Ter_Spec = SpeckleFilter(S1_Orb_Subset_Cal_Ter, 'Sigma0_VH', 'Lee', 3, 3)
+    #S1_Orb_Subset_Cal_Ter_Spec = SpeckleFilter(S1_Orb_Subset_Cal_Ter, 'Sigma0_VH', 'Lee', 3, 3)
 
-    S1_Orb_Subset_Cal_Ter_Spec_dB = Convert_to_dB(S1_Orb_Subset_Cal_Ter_Spec, 'Sigma0_VH')
+    #S1_Orb_Subset_Cal_Ter_Spec_dB = Convert_to_dB(S1_Orb_Subset_Cal_Ter_Spec, 'Sigma0_VH')
 
     #print('Writing...')
     #ProductIO.writeProduct(S1_Orb_Subset_Cal_Ter_Spec_dB, 'C:/Users/jales/Desktop/S1/S1A_processado', 'ENVI')
 
-    print('Processamento finalizado')
+    #print('Processamento finalizado')
     # ------------------------------------------------------------------------------------------------------
 
     #plotBand(S1_Orb_Subset, 'Intensity_VH')
+    print('Calculating the histogram...')
+    plotHistogram(product, 'Sigma0_VH_db')
+    
     print('Thresholding...')
-    binarization(S1_Orb_Subset_Cal_Ter_Spec_dB, 'Sigma0_VH', 2048)
+    find_threshold(histplot[0], histplot[1])
     # ------------------------------------------------------------------------------------------------------
 
     # ------------------------------------------------------------------------------------------------------
