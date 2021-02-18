@@ -22,12 +22,6 @@ from snappy import HashMap
 from snappy import GPF
 from snappy import jpy
 
-# Módulos do Scikit-Image
-
-from skimage.filters import threshold_isodata
-from skimage.filters import threshold_otsu
-from skimage.filters import threshold_mean
-
 # ------------------------------------------------------------------------------------
 
 """
@@ -40,7 +34,14 @@ Funções para executar os operadores do SNAP
 # Função que faz a correção do posicionamento de órbita da imagem
 
 def ApplyOrbitFile(data):
+    """[summary]
 
+    Args:
+        data ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
     print('Aplying Orbit File...')
 
     parameters = HashMap()
@@ -250,7 +251,6 @@ def find_threshold(data, banda):
     return x[key_threshold]
 
 # ------------------------------------------------------------------------------------------------------
-
 
 if __name__ == '__main__':
 
