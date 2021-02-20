@@ -29,9 +29,22 @@ from snappy import jpy
 Funções para executar os operadores do SNAP
 
 """
+# Recorte - Subset
+
+def Subset(data, x, y, w, h):
+
+    print('Subsetting the image...')
+
+    HashMap = jpy.get_type('java.util.HashMap')
+    GPF.getDefaultInstance().getOperatorSpiRegistry().loadOperatorSpis()
+
+    parameters = HashMap()
+    parameters.put('copyMetadata', True)
+    parameters.put('region', "%s,%s,%s,%s" % (x, y, w, h))
+
+    return GPF.createProduct('Subset', parameters, data)
 
 # Ortorretificação (Orthorectification) - Apply Orbit File
-# Função que faz a correção do posicionamento de órbita da imagem
 
 def ApplyOrbitFile(data):
     """[summary]
@@ -54,24 +67,7 @@ def ApplyOrbitFile(data):
 
     return GPF.createProduct('Apply-Orbit-File', parameters, data)
 
-# Recorte - Subset
-# Função que faz o recorte de uma imagem
-
-def Subset(data, x, y, w, h):
-
-    print('Subsetting the image...')
-
-    HashMap = jpy.get_type('java.util.HashMap')
-    GPF.getDefaultInstance().getOperatorSpiRegistry().loadOperatorSpis()
-
-    parameters = HashMap()
-    parameters.put('copyMetadata', True)
-    parameters.put('region', "%s,%s,%s,%s" % (x, y, w, h))
-
-    return GPF.createProduct('Subset', parameters, data)
-
 # Informações - Information
-# Função que retorna informações básicas da imagem como o número de pixels em X e Y, o nome da imagem e das bandas
 
 def ProductInformation(data):
 
@@ -96,7 +92,6 @@ def ProductInformation(data):
     return width, height, name, band_names
 
 # Calibração Radiométrica - Radiometric Calibration
-# Função que aplica uma correção radiométrica na imagem, transformando os números digitais dos pixels em valroes com significado físico
 
 def Calibration(data, band, pol):
 
@@ -112,7 +107,6 @@ def Calibration(data, band, pol):
     return GPF.createProduct('Calibration', parameters, data)
 
 # Filtragem Speckle - Speckle Filtering
-# Função que aplica um filtro para a redução de speckle na imagem
 
 def SpeckleFilter(data, source_band, filter, filterSizeX, filterSizeY):
 
@@ -135,7 +129,6 @@ def SpeckleFilter(data, source_band, filter, filterSizeX, filterSizeY):
     return GPF.createProduct('Speckle-Filter', parameters, data)
 
 # Correção Geométrica (Range Doppler Terrain Correction)
-# Função que ...
 
 def Terrain_Correction(data, source_band):
 
@@ -152,7 +145,6 @@ def Terrain_Correction(data, source_band):
     return GPF.createProduct('Terrain-Correction', parameters, data)
 
 # Conversão para decibel (LinearToFromdB)
-# Convertendo os números digitais para valores em decibel
 
 def Convert_to_dB(data, source_band):
     
@@ -208,10 +200,8 @@ def plotBand(data, banda, vmin, vmax):
     return imgplot
 
 # Função que plota o histograma da imagem
-def plotHistogram(data, banda):
+def Histogram(data, banda):
 
-    print('Plotting the histogram...')
-    
     band = data.getBand(banda)
     
     w = band.getRasterWidth()
@@ -219,9 +209,9 @@ def plotHistogram(data, banda):
     
     band_data = np.zeros(w * h, np.float32)
     band.readPixels(0, 0, w, h, band_data)
-    band_data.shape = h * w
+    band_data.shape = h, w
 
-    histplot = plt.hist(np.asarray(band_data, dtype='float'), bins=2048, range=[-33, -1])
+    histplot = plt.hist(band_data, bins=2048, range=[-33, -1])
 
     return histplot
 
@@ -252,38 +242,53 @@ if __name__ == '__main__':
     GPF.getDefaultInstance().getOperatorSpiRegistry().loadOperatorSpis()
 
     # Product initialization
-    s1_path = 'C:/Users/jales/Desktop/S1/S1A_processado/Sigma0_VH_db.hdr'
+    s1_path = 'C:/Users/jales/Desktop/S1A.zip'
 
     # Reading the data
     product = ProductIO.readProduct(s1_path)
 
     # ------------------------------------------------------------------------------------------------------
 
-    #ProductInformation(product)
+    ProductInformation(product)
 
-    #S1_Orb = ApplyOrbitFile(product)
+    S1_Sub = Subset(product, 0, 9928, 25580, 16846)
 
-    #S1_Orb_Subset = Subset(S1_Orb, 0, 9928, 25580, 16846)
+    print('Imagem recortada: 100%')
 
-    #ProductInformation(S1_Orb_Subset)
+    S1_Sub_Orb = ApplyOrbitFile(S1_Sub)
 
-    #S1_Orb_Subset_Cal = Calibration(S1_Orb_Subset, 'Intensity_VH', 'VH')
+    print('Arquivo de órbita: 100%')
 
-    #S1_Orb_Subset_Cal_Ter = Terrain_Correction(S1_Orb_Subset_Cal, 'Sigma0_VH')
+    ProductInformation(S1_Sub_Orb)
 
-    #S1_Orb_Subset_Cal_Ter_Spec = SpeckleFilter(S1_Orb_Subset_Cal_Ter, 'Sigma0_VH', 'Lee', 3, 3)
+    S1_Sub_Orb_Cal = Calibration(S1_Sub_Orb, 'Intensity_VH', 'VH')
 
-    #S1_Orb_Subset_Cal_Ter_Spec_dB = Convert_to_dB(S1_Orb_Subset_Cal_Ter_Spec, 'Sigma0_VH')
+    print('Imagem calibrada: 100%')
 
-    #print('Writing...')
-    #ProductIO.writeProduct(S1_Orb_Subset_Cal_Ter_Spec_dB, 'C:/Users/jales/Desktop/S1/S1A_processado', 'ENVI')
+    S1_Sub_Orb_Cal_Ter = Terrain_Correction(S1_Sub_Orb_Cal, 'Sigma0_VH')
 
-    #print('Processamento finalizado')
+    print('Correção Geométrica: 100%')
+
+    S1_Sub_Orb_Cal_Ter_Spk = SpeckleFilter(S1_Sub_Orb_Cal_Ter, 'Sigma0_VH', 'Lee', 3, 3)
+
+    print('Filtragem Speckle: 100%')
+
+    S1_Sub_Orb_Cal_Ter_Spk_dB = Convert_to_dB(S1_Sub_Orb_Cal_Ter_Spk, 'Sigma0_VH')
+
+    print('Conversão para dB: 100%')
+
+    #print('Salvando imagem...')
+
+    #ProductIO.writeProduct(S1_Sub_Orb_Cal_Ter_Spk_dB, 'C:/Users/jales/Desktop/S1/S1A_vscode', 'ENVI')
+
+    #print('Imagem salva com sucesso')
+    
+    print('Processamento finalizado')
+
     # ------------------------------------------------------------------------------------------------------
 
-    #plotBand(S1_Orb_Subset, 'Intensity_VH')
     print('Calculating the histogram...')
-    plotHistogram(product, 'Sigma0_VH_db')
+    Histogram(S1_Sub_Orb_Cal_Ter_Spk_dB, 'Sigma0_VH_db')
     
     print('Thresholding...')
     find_threshold(histplot[0], histplot[1])
