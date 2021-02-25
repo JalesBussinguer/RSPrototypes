@@ -21,17 +21,13 @@ from snappy import ProductIO
 from snappy import HashMap
 from snappy import GPF
 from snappy import jpy
+from snappy import WKTReader
 
 # ------------------------------------------------------------------------------------
 
-"""
-
-Funções para executar os operadores do SNAP
-
-"""
 # Recorte - Subset
 
-def Subset(data, x, y, w, h):
+def recorte_por_pixels(data, x, y, w, h):
 
     print('Subsetting the image...')
 
@@ -43,6 +39,36 @@ def Subset(data, x, y, w, h):
     parameters.put('region', "%s,%s,%s,%s" % (x, y, w, h))
 
     return GPF.createProduct('Subset', parameters, data)
+
+def recorte_com_shape(data, shape):
+    
+    r = shapefile.Reader(shape)
+
+    g = []
+
+    for s in r.shapes():
+        g.append(pygeoif.geometry.as_shape(s))
+    
+    m = pygeoif.MultiPoint(g)
+
+    wkt = str(m.wkt).replace('MULTIPOINT', 'POLYGON(') +')'
+
+    SubsetOp = jpy.get_type('org.esa.snap.core.gpf.common.SubsetOp')
+
+    limites = wkt
+
+    geometria = WKTReader().read(limites)
+
+    HashMap = jpy.get_type('java.util.HashMap')
+    GPF.getDefaultInstance().getOperatorSpiRegistry().loadOperatorSpis()
+
+    parameters = HashMap()
+    parameters.put('copyMetadata', True)
+    parameters.put('geoRegion', geometria)
+
+    subset = GPF.createProduct('Subset', parameters, data)
+    
+    return subset
 
 # Ortorretificação (Orthorectification) - Apply Orbit File
 
